@@ -33,6 +33,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.auth.token": "Gateway Token",
   "gateway.auth.password": "Gateway Password",
   "tools.media.image.enabled": "Enable Image Understanding",
+  "tools.media.image.stripFromPrompt": "Strip Image Data from Prompt",
   "tools.media.image.maxBytes": "Image Understanding Max Bytes",
   "tools.media.image.maxChars": "Image Understanding Max Chars",
   "tools.media.image.prompt": "Image Understanding Prompt",

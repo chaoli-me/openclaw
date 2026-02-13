@@ -72,6 +72,8 @@ export type MediaUnderstandingModelConfig = {
 export type MediaUnderstandingConfig = {
   /** Enable media understanding when models are configured. */
   enabled?: boolean;
+  /** When true, strip raw media data from the prompt so the LLM never sees it. */
+  stripFromPrompt?: boolean;
   /** Optional scope gating for understanding. */
   scope?: MediaUnderstandingScopeConfig;
   /** Default max bytes to send. */
