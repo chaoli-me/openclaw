@@ -794,19 +794,31 @@ export async function runEmbeddedAttempt(
           // This eliminates the need for an explicit "view" tool call by injecting
           // images directly into the prompt when the model supports it.
           // Also scans conversation history to enable follow-up questions about earlier images.
-          const imageResult = await detectAndLoadPromptImages({
-            prompt: effectivePrompt,
-            workspaceDir: effectiveWorkspace,
-            model: params.model,
-            existingImages: params.images,
-            historyMessages: activeSession.messages,
-            maxBytes: MAX_IMAGE_BYTES,
-            // Enforce sandbox path restrictions when sandbox is enabled
-            sandbox:
-              sandbox?.enabled && sandbox?.fsBridge
-                ? { root: sandbox.workspaceDir, bridge: sandbox.fsBridge }
-                : undefined,
-          });
+          //
+          // When tools.media.image.stripFromPrompt is true, skip image detection entirely
+          // so raw image data never reaches the LLM context.
+          const stripImages = params.config?.tools?.media?.image?.stripFromPrompt === true;
+          const imageResult = stripImages
+            ? {
+                images: [] as ImageContent[],
+                historyImagesByIndex: new Map<number, ImageContent[]>(),
+                detectedRefs: [] as Array<{ raw: string; type: string; resolved: string }>,
+                loadedCount: 0,
+                skippedCount: 0,
+              }
+            : await detectAndLoadPromptImages({
+                prompt: effectivePrompt,
+                workspaceDir: effectiveWorkspace,
+                model: params.model,
+                existingImages: params.images,
+                historyMessages: activeSession.messages,
+                maxBytes: MAX_IMAGE_BYTES,
+                // Enforce sandbox path restrictions when sandbox is enabled
+                sandbox:
+                  sandbox?.enabled && sandbox?.fsBridge
+                    ? { root: sandbox.workspaceDir, bridge: sandbox.fsBridge }
+                    : undefined,
+              });
 
           // Inject history images into their original message positions.
           // This ensures the model sees images in context (e.g., "compare to the first image").

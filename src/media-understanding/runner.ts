@@ -642,6 +642,17 @@ export async function runCapability(params: {
   const { capability, cfg, ctx } = params;
   const config = params.config ?? cfg.tools?.media?.[capability];
   if (config?.enabled === false) {
+    // When stripFromPrompt is set, remove media paths from the context so that
+    // downstream image injection (detectAndLoadPromptImages) cannot load raw
+    // image data into the LLM prompt.
+    if (config.stripFromPrompt && ctx) {
+      ctx.MediaPath = undefined;
+      ctx.MediaPaths = undefined;
+      ctx.MediaUrls = undefined;
+      if (typeof ctx.Body === "string") {
+        ctx.Body = ctx.Body.replace(/<media:image>/g, "[image received - not processed]");
+      }
+    }
     return {
       outputs: [],
       decision: { capability, outcome: "disabled", attachments: [] },
