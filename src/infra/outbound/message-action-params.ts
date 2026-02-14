@@ -6,12 +6,27 @@ import type {
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
+import type { SsrFPolicy } from "../net/ssrf.js";
 import { assertMediaNotDataUrl, resolveSandboxedMediaSource } from "../../agents/sandbox-paths.js";
 import { readStringParam } from "../../agents/tools/common.js";
 import { extensionForMime } from "../../media/mime.js";
 import { parseSlackTarget } from "../../slack/targets.js";
+import { resolveTelegramAccount } from "../../telegram/accounts.js";
 import { parseTelegramTarget } from "../../telegram/targets.js";
 import { loadWebMedia } from "../../web/media.js";
+
+/** Resolve channel-specific SSRF policy from config. */
+function resolveChannelSsrfPolicy(params: {
+  cfg: OpenClawConfig;
+  channel: ChannelId;
+  accountId?: string | null;
+}): SsrFPolicy | undefined {
+  if (params.channel === "telegram") {
+    const account = resolveTelegramAccount({ cfg: params.cfg, accountId: params.accountId });
+    return account.config.network?.ssrf ?? undefined;
+  }
+  return undefined;
+}
 
 export function readBooleanParam(
   params: Record<string, unknown>,
@@ -256,7 +271,8 @@ export async function hydrateSetGroupIconParams(params: {
       accountId: params.accountId,
     });
     // localRoots: "any" — media paths are already validated by normalizeSandboxMediaList above.
-    const media = await loadWebMedia(mediaSource, maxBytes, { localRoots: "any" });
+    const ssrfPolicy = resolveChannelSsrfPolicy(params);
+    const media = await loadWebMedia(mediaSource, maxBytes, { localRoots: "any", ssrfPolicy });
     params.args.buffer = media.buffer.toString("base64");
     if (!contentTypeParam && media.contentType) {
       params.args.contentType = media.contentType;
@@ -321,7 +337,8 @@ export async function hydrateSendAttachmentParams(params: {
       accountId: params.accountId,
     });
     // localRoots: "any" — media paths are already validated by normalizeSandboxMediaList above.
-    const media = await loadWebMedia(mediaSource, maxBytes, { localRoots: "any" });
+    const ssrfPolicy = resolveChannelSsrfPolicy(params);
+    const media = await loadWebMedia(mediaSource, maxBytes, { localRoots: "any", ssrfPolicy });
     params.args.buffer = media.buffer.toString("base64");
     if (!contentTypeParam && media.contentType) {
       params.args.contentType = media.contentType;
