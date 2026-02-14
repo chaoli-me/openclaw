@@ -383,7 +383,8 @@ export async function sendMessageTelegram(
   };
 
   if (mediaUrl) {
-    const media = await loadWebMedia(mediaUrl, opts.maxBytes);
+    const ssrfPolicy = account.config.network?.ssrf ?? undefined;
+    const media = await loadWebMedia(mediaUrl, opts.maxBytes, { ssrfPolicy });
     const kind = mediaKindFromMime(media.contentType ?? undefined);
     const isGif = isGifMedia({
       contentType: media.contentType,
