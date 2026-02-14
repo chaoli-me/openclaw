@@ -275,6 +275,7 @@ export const dispatchTelegramMessage = async ({
           onVoiceRecording: sendRecordVoice,
           linkPreview: telegramCfg.linkPreview,
           replyQuoteText,
+          ssrfPolicy: telegramCfg.network?.ssrf,
         });
         if (result.delivered) {
           deliveryState.delivered = true;
@@ -323,6 +324,7 @@ export const dispatchTelegramMessage = async ({
       chunkMode,
       linkPreview: telegramCfg.linkPreview,
       replyQuoteText,
+      ssrfPolicy: telegramCfg.network?.ssrf,
     });
     sentFallback = result.delivered;
   }

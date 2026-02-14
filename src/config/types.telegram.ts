@@ -23,6 +23,13 @@ export type TelegramActionConfig = {
 export type TelegramNetworkConfig = {
   /** Override Node's autoSelectFamily behavior (true = enable, false = disable). */
   autoSelectFamily?: boolean;
+  /** SSRF policy for outbound media fetches (e.g. sending images via URL). */
+  ssrf?: {
+    /** Allow fetching from private/internal IP addresses. */
+    allowPrivateNetwork?: boolean;
+    /** Hostnames exempt from SSRF blocking (e.g. internal MinIO). */
+    allowedHostnames?: string[];
+  };
 };
 
 export type TelegramInlineButtonsScope = "off" | "dm" | "group" | "all" | "allowlist";

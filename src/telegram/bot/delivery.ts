@@ -2,6 +2,7 @@ import { type Bot, GrammyError, InputFile } from "grammy";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { ReplyToMode } from "../../config/config.js";
 import type { MarkdownTableMode } from "../../config/types.base.js";
+import type { SsrFPolicy } from "../../infra/net/ssrf.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { StickerMetadata, TelegramContext } from "./types.js";
 import { chunkMarkdownTextWithMode, type ChunkMode } from "../../auto-reply/chunk.js";
@@ -49,6 +50,8 @@ export async function deliverReplies(params: {
   linkPreview?: boolean;
   /** Optional quote text for Telegram reply_parameters. */
   replyQuoteText?: string;
+  /** SSRF policy for outbound media URL fetches. */
+  ssrfPolicy?: SsrFPolicy;
 }): Promise<{ delivered: boolean }> {
   const {
     replies,
@@ -141,7 +144,10 @@ export async function deliverReplies(params: {
     let pendingFollowUpText: string | undefined;
     for (const mediaUrl of mediaList) {
       const isFirstMedia = first;
-      const media = await loadWebMedia(mediaUrl);
+      const media = await loadWebMedia(
+        mediaUrl,
+        params.ssrfPolicy ? { ssrfPolicy: params.ssrfPolicy } : undefined,
+      );
       const kind = mediaKindFromMime(media.contentType ?? undefined);
       const isGif = isGifMedia({
         contentType: media.contentType,

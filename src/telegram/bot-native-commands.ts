@@ -560,6 +560,7 @@ export const registerTelegramNativeCommands = ({
                   tableMode,
                   chunkMode,
                   linkPreview: telegramCfg.linkPreview,
+                  ssrfPolicy: telegramCfg.network?.ssrf,
                 });
                 if (result.delivered) {
                   deliveryState.delivered = true;
@@ -593,6 +594,7 @@ export const registerTelegramNativeCommands = ({
               tableMode,
               chunkMode,
               linkPreview: telegramCfg.linkPreview,
+              ssrfPolicy: telegramCfg.network?.ssrf,
             });
           }
         });
@@ -678,6 +680,7 @@ export const registerTelegramNativeCommands = ({
             tableMode,
             chunkMode,
             linkPreview: telegramCfg.linkPreview,
+            ssrfPolicy: telegramCfg.network?.ssrf,
           });
         });
       }
