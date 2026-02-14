@@ -455,6 +455,7 @@ export const MediaUnderstandingModelSchema = z
 export const ToolsMediaUnderstandingSchema = z
   .object({
     enabled: z.boolean().optional(),
+    stripFromPrompt: z.boolean().optional(),
     scope: MediaUnderstandingScopeSchema,
     maxBytes: z.number().int().positive().optional(),
     maxChars: z.number().int().positive().optional(),
