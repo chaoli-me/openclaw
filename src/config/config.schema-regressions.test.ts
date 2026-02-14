@@ -36,4 +36,53 @@ describe("config schema regressions", () => {
 
     expect(res.ok).toBe(true);
   });
+
+  it("accepts telegram network ssrf allowedHostnames", () => {
+    const res = validateConfigObject({
+      channels: {
+        telegram: {
+          network: {
+            ssrf: {
+              allowedHostnames: ["minio.internal.example.com"],
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it("accepts telegram network ssrf allowPrivateNetwork", () => {
+    const res = validateConfigObject({
+      channels: {
+        telegram: {
+          network: {
+            ssrf: {
+              allowPrivateNetwork: true,
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it("rejects unknown keys inside telegram network ssrf", () => {
+    const res = validateConfigObject({
+      channels: {
+        telegram: {
+          network: {
+            ssrf: {
+              allowedHostnames: ["example.com"],
+              bogusKey: true,
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(false);
+  });
 });
