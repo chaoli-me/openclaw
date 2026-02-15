@@ -102,16 +102,19 @@ function createStreamFnWithExtraParams(
 }
 
 /**
- * Create a streamFn wrapper that adds OpenRouter app attribution headers.
- * These headers allow OpenClaw to appear on OpenRouter's leaderboard.
+ * Create a streamFn wrapper that injects extra HTTP headers into every request.
+ * Used for OpenRouter app attribution and provider-level custom headers (e.g. User-Agent gating).
  */
-function createOpenRouterHeadersWrapper(baseStreamFn: StreamFn | undefined): StreamFn {
+function createHeadersWrapper(
+  baseStreamFn: StreamFn | undefined,
+  extraHeaders: Record<string, string>,
+): StreamFn {
   const underlying = baseStreamFn ?? streamSimple;
   return (model, context, options) =>
     underlying(model, context, {
       ...options,
       headers: {
-        ...OPENROUTER_APP_HEADERS,
+        ...extraHeaders,
         ...options?.headers,
       },
     });
@@ -149,8 +152,17 @@ export function applyExtraParamsToAgent(
     agent.streamFn = wrappedStreamFn;
   }
 
+  // Inject provider-level custom headers (e.g. User-Agent gating for kimi-coding)
+  const providerHeaders = cfg?.models?.providers?.[provider]?.headers;
+  if (providerHeaders && Object.keys(providerHeaders).length > 0) {
+    log.debug(
+      `applying provider headers for ${provider}/${modelId}: ${Object.keys(providerHeaders).join(", ")}`,
+    );
+    agent.streamFn = createHeadersWrapper(agent.streamFn, providerHeaders);
+  }
+
   if (provider === "openrouter") {
     log.debug(`applying OpenRouter app attribution headers for ${provider}/${modelId}`);
-    agent.streamFn = createOpenRouterHeadersWrapper(agent.streamFn);
+    agent.streamFn = createHeadersWrapper(agent.streamFn, OPENROUTER_APP_HEADERS);
   }
 }
