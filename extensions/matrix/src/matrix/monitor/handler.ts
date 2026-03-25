@@ -1,3 +1,7 @@
+import type { CoreConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
+import type { LocationMessageEventContent, MatrixClient } from "../sdk.js";
+import type { MatrixInboundEventDeduper } from "./inbound-dedupe.js";
+import type { MatrixRawEvent, RoomMessageEventContent } from "./types.js";
 import {
   createReplyPrefixOptions,
   createTypingCallbacks,
@@ -13,7 +17,6 @@ import {
   type RuntimeEnv,
   type RuntimeLogger,
 } from "../../runtime-api.js";
-import type { CoreConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
 import { formatMatrixMediaUnavailableText } from "../media-text.js";
 import { fetchMatrixPollSnapshot } from "../poll-summary.js";
 import {
@@ -22,7 +25,6 @@ import {
   isPollStartType,
   parsePollStartContent,
 } from "../poll-types.js";
-import type { LocationMessageEventContent, MatrixClient } from "../sdk.js";
 import {
   reactMatrixMessage,
   sendMessageMatrix,
@@ -31,7 +33,6 @@ import {
 } from "../send.js";
 import { resolveMatrixMonitorAccessState } from "./access-state.js";
 import { resolveMatrixAckReactionConfig } from "./ack-config.js";
-import type { MatrixInboundEventDeduper } from "./inbound-dedupe.js";
 import { resolveMatrixLocation, type MatrixLocationPayload } from "./location.js";
 import { downloadMatrixMedia } from "./media.js";
 import { resolveMentions } from "./mentions.js";
@@ -41,7 +42,6 @@ import { resolveMatrixRoomConfig } from "./rooms.js";
 import { resolveMatrixInboundRoute } from "./route.js";
 import { createMatrixThreadContextResolver } from "./thread-context.js";
 import { resolveMatrixThreadRootId, resolveMatrixThreadTarget } from "./threads.js";
-import type { MatrixRawEvent, RoomMessageEventContent } from "./types.js";
 import { EventType, RelationType } from "./types.js";
 import { isMatrixVerificationRoomMessage } from "./verification-utils.js";
 
@@ -546,12 +546,28 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         resolveAgentRoute: core.channel.routing.resolveAgentRoute,
       });
       const agentMentionRegexes = core.channel.mentions.buildMentionRegexes(cfg, _route.agentId);
-      const { wasMentioned, hasExplicitMention } = resolveMentions({
+      const { wasMentioned: _wasMentionedRaw, hasExplicitMention } = resolveMentions({
         content,
         userId: selfUserId,
         text: mentionPrecheckText,
         mentionRegexes: agentMentionRegexes,
       });
+
+      // Treat reply-to-bot as implicit mention in rooms (parity with Telegram/WhatsApp/etc.)
+      let wasMentioned = _wasMentionedRaw;
+      if (!wasMentioned && isRoom) {
+        const replyToId = content["m.relates_to"]?.["m.in_reply_to"]?.event_id;
+        if (replyToId) {
+          try {
+            const repliedEvent = await client.getEvent(roomId, replyToId);
+            if (repliedEvent?.sender === selfUserId) {
+              wasMentioned = true;
+            }
+          } catch {
+            // Event lookup failed; do not treat as mention.
+          }
+        }
+      }
       if (
         isConfiguredBotSender &&
         allowBotsMode === "mentions" &&
